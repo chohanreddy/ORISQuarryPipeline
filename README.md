@@ -44,6 +44,44 @@ On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
 
 ## How it works
 
+```mermaid
+flowchart TD
+    User([Browser / curl]) -->|POST /api/jobs| API[FastAPI]
+    API -->|enqueue| Redis[(Redis queue)]
+    Redis --> Worker[Celery worker]
+
+    Worker --> Discovery
+    subgraph Discovery
+        OSM[OSM Overpass API]
+        Serper[Serper web search\noptional]
+    end
+
+    Discovery -->|candidate URLs + OSM tags| Scraper
+    subgraph Scraper
+        robots[robots.txt check]
+        fetch[HTTP fetch + jitter]
+        parse[BeautifulSoup → plain text]
+        robots --> fetch --> parse
+    end
+
+    Scraper -->|raw text per source| Extractor
+    subgraph Extractor
+        osm_ext[OSM tag extraction\nno LLM]
+        gemini[Gemini Flash\nstructured JSON + quotes]
+    end
+
+    Extractor -->|evidence records| Reconciler
+    subgraph Reconciler
+        trust[Trust tier × confidence]
+        geocode[Nominatim reverse geocode]
+        trust --> geocode
+    end
+
+    Reconciler -->|QuarrySiteRecord| DB[(Postgres)]
+    DB -->|GET /api/sites| API
+    API --> User
+```
+
 ```
 POST /api/jobs
     |
