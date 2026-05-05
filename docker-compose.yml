@@ -79,6 +79,8 @@ services:
       - "3000:80"
     depends_on:
       - backend
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
 
 volumes:
   pg_data:
