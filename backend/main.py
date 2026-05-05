@@ -97,6 +97,7 @@ def get_job(job_id: str):
 def list_sites(
     q: Optional[str] = Query(None, description="Filter by name (case-insensitive)"),
     status: Optional[str] = Query(None, description="Filter by operational_status"),
+    named_only: bool = Query(False, description="Exclude sites with no name"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -107,6 +108,8 @@ def list_sites(
             query = query.filter(Site.official_name.ilike(f"%{q}%"))
         if status:
             query = query.filter(Site.operational_status == status)
+        if named_only:
+            query = query.filter(Site.official_name.isnot(None), Site.official_name != "")
 
         total = query.count()
         sites = query.order_by(Site.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
