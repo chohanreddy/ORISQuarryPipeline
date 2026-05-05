@@ -481,10 +481,13 @@ tbody tr:last-child td { border-bottom: none; }
   gap: 0.5rem;
 }
 
-.area-preview svg {
-  display: block;
-  border-radius: 8px;
+#area-minimap {
+  width: 220px;
+  height: 220px;
+  border-radius: 10px;
   border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .area-lbl {
@@ -1168,37 +1171,9 @@ tbody tr:last-child td { border-bottom: none; }
         </div>
       </div>
 
-      <!-- Right: area preview SVG -->
+      <!-- Right: area preview mini-map -->
       <div class="area-preview">
-        <svg id="area-svg" width="220" height="220" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#F0EDE8">
-          <!-- Grid dots -->
-          <defs>
-            <pattern id="grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="0" cy="0" r="1" fill="#C5C0B8"/>
-              <circle cx="24" cy="0" r="1" fill="#C5C0B8"/>
-              <circle cx="0" cy="24" r="1" fill="#C5C0B8"/>
-              <circle cx="24" cy="24" r="1" fill="#C5C0B8"/>
-            </pattern>
-            <radialGradient id="areaGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#E8622A" stop-opacity="0.18"/>
-              <stop offset="100%" stop-color="#E8622A" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <rect width="192" height="192" fill="url(#grid)"/>
-          <!-- Area circle -->
-          <circle id="area-circle" cx="96" cy="96" r="60" fill="url(#areaGrad)" stroke="#E8622A" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8"/>
-          <!-- Center crosshair -->
-          <line x1="96" y1="80" x2="96" y2="88" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="96" y1="104" x2="96" y2="112" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="80" y1="96" x2="88" y2="96" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="104" y1="96" x2="112" y2="96" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
-          <!-- Center dot with pulse ring -->
-          <circle cx="96" cy="96" r="3.5" fill="none" stroke="#E8622A" stroke-width="1.5">
-            <animate attributeName="r" values="4;22" dur="2s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0.7;0" dur="2s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="96" cy="96" r="3.5" fill="#E8622A"/>
-        </svg>
+        <div id="area-minimap"></div>
         <div class="area-lbl">
           <strong id="area-radius-label">50</strong> km search radius
         </div>
@@ -1475,13 +1450,56 @@ async function loadMapMarkers() {
   }
 }
 
-// area preview SVG
+// area preview mini-map
+let miniMap = null;
+let miniCircle = null;
+
+function initMiniMap(lat, lon, radiusKm) {
+  miniMap = L.map('area-minimap', {
+    zoomControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    touchZoom: false,
+    keyboard: false,
+    attributionControl: false,
+  }).setView([lat, lon], _radiusToZoom(radiusKm));
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+  }).addTo(miniMap);
+
+  miniCircle = L.circle([lat, lon], {
+    radius: radiusKm * 1000,
+    color: '#E8622A',
+    fillColor: '#E8622A',
+    fillOpacity: 0.10,
+    weight: 2,
+  }).addTo(miniMap);
+}
+
+function _radiusToZoom(km) {
+  if (km <= 2)  return 13;
+  if (km <= 5)  return 12;
+  if (km <= 10) return 11;
+  if (km <= 20) return 10;
+  if (km <= 50) return 9;
+  if (km <= 100) return 8;
+  return 7;
+}
+
 function updateAreaPreview() {
   const r = parseFloat(document.getElementById('radius').value) || 50;
-  const svgR = Math.max(18, Math.min(84, 18 + (r / 200) * 66));
-  document.getElementById('area-circle').setAttribute('r', svgR);
   document.getElementById('area-radius-label').textContent = r;
   document.getElementById('area-coord-label').textContent = `${selectedLat.toFixed(4)}, ${selectedLon.toFixed(4)}`;
+
+  if (!miniMap) {
+    initMiniMap(selectedLat, selectedLon, r);
+    return;
+  }
+  miniMap.setView([selectedLat, selectedLon], _radiusToZoom(r));
+  miniCircle.setLatLng([selectedLat, selectedLon]);
+  miniCircle.setRadius(r * 1000);
 }
 
 function applyPreset(lat, lon, radius, name) {
