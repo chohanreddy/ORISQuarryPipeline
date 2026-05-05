@@ -87,7 +87,7 @@ Stack is FastAPI + Celery + Redis + Postgres + Nginx, all in Docker Compose.
 
 ---
 
-## API
+## Talking to the backend
 
 A few endpoints worth knowing:
 
