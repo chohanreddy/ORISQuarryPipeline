@@ -1,0 +1,47 @@
+[
+  {
+    "label": "Carrière de Vignats - Calvados, Normandy",
+    "description": "Active limestone quarry operated by Eurovia near Vignats village, Calvados department.",
+    "input": {
+      "latitude": 48.8788,
+      "longitude": -0.0975,
+      "radius_km": 10
+    },
+    "expected": {
+      "official_name": "Vignats",
+      "operational_status": "active",
+      "materials_produced": ["limestone"],
+      "notes": "Name match is substring; status confirmed active in recent planning documents."
+    }
+  },
+  {
+    "label": "Carrières du Boulonnais - Pas-de-Calais",
+    "description": "Large limestone and chalk quarry complex in the Boulonnais area near Marquise, operated by Holcim France.",
+    "input": {
+      "latitude": 50.7196,
+      "longitude": 1.6050,
+      "radius_km": 15
+    },
+    "expected": {
+      "official_name": "Boulonnais",
+      "operational_status": "active",
+      "materials_produced": ["limestone", "chalk"],
+      "notes": "Multiple quarries in area; at least one must match. Materials include limestone and chalk."
+    }
+  },
+  {
+    "label": "Carrière de Rimont - Ariège, Occitanie",
+    "description": "Marble quarry in the Ariège Pyrenees near Rimont village. Operational status uncertain.",
+    "input": {
+      "latitude": 43.0466,
+      "longitude": 1.1022,
+      "radius_km": 5
+    },
+    "expected": {
+      "official_name": "Rimont",
+      "operational_status": null,
+      "materials_produced": ["marble"],
+      "notes": "Status may be null (abstained) - this is acceptable given sparse recent data."
+    }
+  }
+]

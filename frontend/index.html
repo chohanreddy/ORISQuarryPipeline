@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORIS Quarry Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* colour palette */
+  --bg:         #EFECE6;
+  --bg2:        #E8E5DF;
+  --surface:    #FFFFFF;
+  --surface2:   #F7F5F1;
+  --surface3:   #F0EDE8;
+  --border:     #DDD9D2;
+  --border2:    #C5C0B8;
+  --text:       #1C1917;
+  --text2:      #292524;
+  --muted:      #6B6560;
+  --muted2:     #9B9188;
+  --accent:     #E8622A;
+  --accent-h:   #CF5424;
+  --accent-dim: rgba(232,98,42,0.12);
+  --green:      #15803D;
+  --green-dim:  rgba(21,128,61,0.10);
+  --amber:      #B45309;
+  --amber-dim:  rgba(180,83,9,0.10);
+  --red:        #DC2626;
+  --red-dim:    rgba(220,38,38,0.10);
+  --blue:       #1D4ED8;
+  --blue-dim:   rgba(29,78,216,0.10);
+  --purple:     #6D28D9;
+  --purple-dim: rgba(109,40,217,0.10);
+}
+
+html {
+  font-size: 14px;
+  background: #EFECE6;
+}
+body {
+  background: #EFECE6;
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+/* header */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.logo-mark {
+  width: 40px; height: 40px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 22px; height: 22px; }
+
+header h1 { font-size: 1.1875rem; font-weight: 700; letter-spacing: -0.02em; }
+.header-sep { width: 1px; height: 20px; background: var(--border2); margin: 0 0.375rem; }
+header p { font-size: 0.8125rem; color: var(--muted); }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 2px var(--green-dim); }
+
+/* nav tabs */
+nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex;
+}
+
+.tab {
+  padding: 0 1rem;
+  height: 42px;
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.8125rem; font-weight: 500; color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  user-select: none; white-space: nowrap;
+}
+.tab svg { width: 14px; height: 14px; opacity: 0.7; }
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab.active svg { opacity: 1; }
+
+/* layout */
+.panel { display: none; padding: 2rem; max-width: 1060px; margin: 0 auto; }
+.panel.active { display: block; }
+
+/* card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.card-title {
+  font-size: 0.8125rem; font-weight: 600; color: var(--text2);
+  margin-bottom: 1.125rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.card-title svg { width: 14px; height: 14px; color: var(--muted); }
+
+/* form inputs */
+.field-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+label {
+  display: block;
+  font-size: 0.75rem; font-weight: 500; color: var(--muted);
+  margin-bottom: 0.375rem; letter-spacing: 0.01em;
+}
+
+input[type=number], input[type=text], select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  border-radius: 7px;
+  font-size: 0.875rem; font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+input::placeholder { color: var(--muted2); }
+
+.form-footer {
+  display: flex; align-items: flex-end; gap: 0.75rem; margin-top: 0.75rem;
+}
+.field-sm { flex: 0 0 200px; }
+
+/* buttons */
+button {
+  font-family: inherit; cursor: pointer; border: none; outline: none;
+  transition: background 0.15s, opacity 0.15s, box-shadow 0.15s;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  font-weight: 500; border-radius: 7px;
+}
+.btn-primary {
+  background: var(--accent); color: #fff;
+  padding: 0.5rem 1.125rem; font-size: 0.875rem;
+}
+.btn-primary:hover { background: var(--accent-h); }
+.btn-primary:active { opacity: 0.85; }
+
+.btn-ghost {
+  background: var(--surface2); color: var(--text2);
+  padding: 0.4rem 0.875rem; font-size: 0.8125rem;
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--surface3); }
+
+.btn-icon {
+  background: var(--surface2); color: var(--muted);
+  padding: 0.375rem 0.625rem; font-size: 0.75rem;
+  border: 1px solid var(--border);
+}
+.btn-icon:hover { color: var(--text); background: var(--surface3); }
+
+/* status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.55rem; border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.02em;
+}
+.badge::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+}
+.badge-pending  { background: var(--surface3); color: var(--muted); }
+.badge-pending::before { background: var(--muted); }
+.badge-running  { background: var(--blue-dim); color: var(--blue); }
+.badge-running::before { background: var(--blue); animation: pulse 1.4s ease-in-out infinite; }
+.badge-completed { background: var(--green-dim); color: var(--green); }
+.badge-completed::before { background: var(--green); }
+.badge-failed   { background: var(--red-dim); color: var(--red); }
+.badge-failed::before { background: var(--red); }
+.badge-active   { background: var(--green-dim); color: var(--green); }
+.badge-active::before { background: var(--green); }
+.badge-inactive { background: var(--red-dim); color: var(--red); }
+.badge-inactive::before { background: var(--red); }
+.badge-unknown  { background: var(--amber-dim); color: var(--amber); }
+.badge-unknown::before { background: var(--amber); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* sites table */
+.toolbar {
+  display: flex; align-items: center; gap: 0.625rem;
+  margin-bottom: 1.125rem; flex-wrap: wrap;
+}
+.search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 280px; }
+.search-wrap svg {
+  position: absolute; left: 0.625rem; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; color: var(--muted2); pointer-events: none;
+}
+.search-wrap input { padding-left: 2rem; }
+.divider { width: 1px; height: 24px; background: var(--border); margin: 0 0.25rem; }
+
+table { width: 100%; border-collapse: collapse; }
+thead tr { border-bottom: 1px solid var(--border); }
+th {
+  text-align: left; padding: 0.5rem 0.875rem;
+  font-size: 0.6875rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
+}
+td {
+  padding: 0.625rem 0.875rem; font-size: 0.8125rem;
+  border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle;
+}
+tbody tr { transition: background 0.1s; cursor: pointer; }
+tbody tr:hover td { background: var(--surface2); }
+tbody tr:last-child td { border-bottom: none; }
+.td-name { color: var(--text); font-weight: 500; }
+.td-muted { color: var(--muted); font-size: 0.75rem; }
+
+.conf-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.conf-num { font-size: 0.75rem; color: var(--muted); min-width: 28px; }
+.conf-track { width: 52px; height: 4px; background: var(--surface3); border-radius: 99px; overflow: hidden; }
+.conf-bar { height: 100%; border-radius: 99px; }
+.conf-hi { background: var(--green); }
+.conf-mid { background: var(--amber); }
+.conf-lo { background: var(--red); }
+
+.pagination { display: flex; gap: 0.375rem; margin-top: 1rem; justify-content: flex-end; }
+.page-btn {
+  min-width: 30px; height: 28px; padding: 0 0.5rem; border-radius: 6px;
+  font-size: 0.75rem; font-weight: 500;
+  background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
+}
+.page-btn:hover { background: var(--surface3); color: var(--text); }
+.page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* empty state */
+.empty { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
+.empty svg { width: 36px; height: 36px; margin: 0 auto 0.75rem; opacity: 0.35; display: block; }
+.empty p { font-size: 0.8125rem; font-weight: 500; color: var(--text2); margin: 0; }
+.empty small { font-size: 0.75rem; color: var(--muted2); margin-top: 0.375rem; display: block; line-height: 1.5; }
+.empty-box {
+  display: inline-block; border: 1.5px dashed var(--border2);
+  border-radius: 10px; padding: 2rem 2.5rem; margin: 1rem 0;
+}
+
+/* health tiles */
+.health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
+.health-tile { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.125rem; }
+.health-tile .ht-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted2); margin-bottom: 0.5rem; }
+.health-tile .ht-value { font-size: 1.375rem; font-weight: 700; }
+.health-tile .ht-sub { font-size: 0.6875rem; color: var(--muted); margin-top: 0.2rem; }
+.ht-ok { color: var(--green); }
+.ht-err { color: var(--red); }
+.ht-warn { color: var(--amber); }
+.ht-neutral { color: var(--text); }
+
+/* eval cards */
+.eval-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.625rem; }
+.eval-card h3 { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.625rem; }
+.eval-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
+.eval-row:last-child { border-bottom: none; }
+.eval-row .label { color: var(--muted); }
+.eval-pass { color: var(--green); font-weight: 600; }
+.eval-fail { color: var(--red); font-weight: 600; }
+
+.score-banner {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 1rem 1.5rem; margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.score-banner .score-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.score-banner .score-num { font-size: 1.75rem; font-weight: 700; color: var(--accent); }
+
+/* JSON modal */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+  z-index: 200; align-items: center; justify-content: center; padding: 1.5rem;
+}
+.overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  width: min(860px, 100%); max-height: 88vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.modal-head {
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.modal-head-left { display: flex; align-items: center; gap: 0.625rem; }
+.modal-title { font-size: 0.875rem; font-weight: 600; }
+.modal-subtitle { font-size: 0.75rem; color: var(--muted); }
+.modal-close {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  width: 28px; height: 28px; padding: 0; border-radius: 6px; font-size: 0.875rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { color: var(--text); background: var(--surface3); }
+.modal-body { overflow-y: auto; padding: 1rem 1.25rem; flex: 1; }
+.json-viewer {
+  background: #1C1917; border: 1px solid #44403C; border-radius: 8px;
+  padding: 1rem; font-family: 'SF Mono','Fira Code', ui-monospace, monospace;
+  font-size: 0.75rem; line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+  overflow-x: auto; color: #D6D3D1;
+}
+.j-key   { color: #93C5FD; }
+.j-str   { color: #86EFAC; }
+.j-num   { color: #FDA4AF; }
+.j-bool  { color: #FCD34D; }
+.j-null  { color: var(--muted); font-style: italic; }
+
+.section-label {
+  font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted2); margin: 1.5rem 0 0.625rem;
+}
+
+/* discover tab */
+
+/* Stats grid */
+.discover-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  animation: fade-in 0.5s ease 0.1s both;
+}
+.ds-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.125rem 1.375rem;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.ds-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-color: var(--border2); }
+.ds-val {
+  font-size: 2rem; font-weight: 800;
+  letter-spacing: -0.045em; line-height: 1;
+  color: var(--text);
+}
+.ds-key { font-size: 0.6875rem; color: var(--muted); margin-top: 0.4rem; }
+.ds-tag {
+  padding: 0.25rem 0.625rem; border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 600; display: inline-flex;
+}
+.ds-tag-osm  { background: rgba(74,222,128,0.12); color: var(--green); }
+.ds-tag-llm  { background: var(--accent-dim); color: var(--accent); }
+
+/* Pipeline flow */
+.pipeline-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 10px;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+.pipeline-flow::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, #E8622A 0%, #F5A742 55%, rgba(245,167,66,0.2) 100%);
+}
+
+.pf-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.125rem 1.25rem;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.pf-step.active { background: var(--surface2); }
+.pf-step.done   { background: transparent; }
+
+.pf-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.pf-step.active .pf-icon { transform: scale(1.05); }
+
+.pf-icon svg { width: 19px; height: 19px; }
+
+.pf-icon-blue   { background: rgba(29,78,216,0.10);  color: #1D4ED8; }
+.pf-icon-green  { background: rgba(21,128,61,0.10);  color: #15803D; }
+.pf-icon-orange { background: var(--accent-dim);     color: var(--accent); }
+.pf-icon-purple { background: rgba(109,40,217,0.10); color: #6D28D9; }
+
+.pf-meta { min-width: 0; }
+.pf-name { font-size: 0.8125rem; font-weight: 600; color: var(--text2); }
+.pf-step.active .pf-name { color: var(--text); }
+.pf-src  { font-size: 0.6875rem; color: var(--muted2); margin-top: 0.15rem; }
+
+.pf-arrow {
+  width: 28px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--border2);
+}
+.pf-arrow svg { width: 14px; height: 14px; }
+
+.pf-step-num {
+  position: absolute;
+  top: 0.375rem; right: 0.75rem;
+  font-size: 1.625rem; font-weight: 800;
+  background: linear-gradient(135deg, #E8622A, #F5A742);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0.28;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Search layout: 2-column */
+.search-layout {
+  display: grid;
+  grid-template-columns: 1fr 228px;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .search-layout { grid-template-columns: 1fr; }
+  .area-preview  { display: none; }
+  .pipeline-flow { flex-wrap: wrap; }
+  .pf-arrow { display: none; }
+  .discover-stats { grid-template-columns: 1fr 1fr; }
+  .hero-title { font-size: 2rem; }
+}
+
+/* Area preview (right column) */
+.area-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.area-preview svg {
+  display: block;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.area-lbl {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  text-align: center;
+}
+.area-lbl strong { color: var(--accent); }
+
+/* Preset chips */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  align-items: center;
+}
+.presets-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+  margin-right: 0.25rem;
+}
+.preset-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.preset-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--accent-dim);
+}
+
+/* job status card */
+.job-status-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  display: none;
+}
+
+.job-status-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+}
+.job-id-wrap { display: flex; align-items: center; gap: 0.625rem; }
+.job-id {
+  font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
+  font-size: 0.75rem; color: var(--muted);
+  background: var(--bg); padding: 0.25rem 0.5rem;
+  border-radius: 5px; border: 1px solid var(--border);
+}
+
+/* Pipeline mini-steps inside job card */
+.job-pipe {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.875rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.jp-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.625rem;
+  color: var(--muted2);
+  border-right: 1px solid var(--border);
+  transition: background 0.3s, color 0.3s;
+}
+.jp-step:last-child { border-right: none; }
+.jp-step svg { width: 13px; height: 13px; opacity: 0.4; transition: opacity 0.3s; }
+
+.jp-step.jp-active {
+  background: var(--surface2);
+  color: var(--text2);
+}
+.jp-step.jp-active svg { opacity: 1; }
+.jp-step.jp-done {
+  color: #15803D;
+}
+.jp-step.jp-done svg { opacity: 0.9; color: #15803D; }
+
+/* Progress */
+.progress-track { background: var(--bg); border-radius: 99px; height: 5px; overflow: hidden; margin: 0.625rem 0; }
+.progress-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), #F5A742);
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.progress-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+
+/* recent jobs list */
+.job-row {
+  display: flex; align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  gap: 0.75rem;
+  transition: background 0.12s;
+}
+.job-row:last-child { border-bottom: none; }
+.job-row:hover { background: var(--surface2); }
+
+.job-row-icon {
+  width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+}
+.job-row-icon svg { width: 14px; height: 14px; }
+
+.job-row-body { flex: 1; min-width: 0; }
+.job-row-id {
+  font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
+  font-size: 0.6875rem; color: var(--accent);
+  margin-bottom: 0.125rem;
+}
+.job-row-meta { font-size: 0.75rem; color: var(--muted); }
+.job-row-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+/* location search with nominatim autocomplete */
+.loc-wrap { position: relative; }
+
+.loc-input-row {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 0.75rem;
+  gap: 0.5rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.loc-input-row:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.loc-input-row svg { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+.loc-input-row input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+.loc-input-row input:focus { box-shadow: none; border: none; }
+.loc-input-row input::placeholder { color: var(--muted2); }
+
+.loc-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loc-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  display: none;
+  overflow: hidden;
+}
+
+.loc-suggestion {
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.loc-suggestion:last-child { border-bottom: none; }
+.loc-suggestion:hover { background: var(--surface2); }
+.loc-name { font-size: 0.8125rem; font-weight: 500; color: var(--text); }
+.loc-detail { font-size: 0.6875rem; color: var(--muted); margin-top: 0.1rem; }
+.loc-empty { padding: 0.75rem 0.875rem; font-size: 0.8125rem; color: var(--muted); text-align: center; }
+
+.loc-resolved {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  min-height: 1rem;
+}
+.loc-resolved svg { width: 11px; height: 11px; color: var(--green); flex-shrink: 0; }
+.loc-coords-val { font-family: 'SF Mono','Fira Code',ui-monospace,monospace; color: var(--muted2); }
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.or-divider::before, .or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.coords-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+/* gradient logo + brand */
+.logo-mark {
+  background: linear-gradient(135deg, #E8622A 0%, #F5A742 100%) !important;
+  box-shadow: 0 2px 8px rgba(232,98,42,0.30);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.logo-mark:hover { box-shadow: 0 4px 18px rgba(232,98,42,0.42); transform: scale(1.06); }
+
+.brand-oris {
+  background: linear-gradient(135deg, #E8622A 0%, #F5A742 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+.brand-pipe {
+  font-weight: 500;
+  color: var(--text2);
+  margin-left: 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+/* hero */
+.hero {
+  padding: 2.75rem 0 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 90% at 0% 10%, rgba(232,98,42,0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 90% 80%, rgba(245,167,66,0.06) 0%, transparent 55%);
+  pointer-events: none;
+}
+.hero > * { position: relative; }
+.hero-chips { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 1.125rem; flex-wrap: wrap; }
+.hero-chip {
+  display: inline-flex; align-items: center;
+  padding: 0.2rem 0.65rem; border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em;
+  border: 1px solid;
+}
+.hero-chip-blue   { background: rgba(29,78,216,0.08);  color: #1D4ED8; border-color: rgba(29,78,216,0.2); }
+.hero-chip-orange { background: var(--accent-dim);      color: var(--accent); border-color: rgba(232,98,42,0.22); }
+.hero-chip-purple { background: rgba(109,40,217,0.08); color: #6D28D9; border-color: rgba(109,40,217,0.2); }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  padding: 0.25rem 0.75rem; border-radius: 99px;
+  background: var(--accent-dim); color: var(--accent);
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em;
+  margin-bottom: 1.125rem;
+  border: 1px solid rgba(232,98,42,0.18);
+}
+.hero-title {
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+.hero-accent {
+  background: linear-gradient(135deg, #E8622A 0%, #F5A742 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 1rem;
+  color: var(--muted);
+  min-height: 1.6em;
+  line-height: 1.6;
+}
+.hero-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.85em;
+  background: var(--accent);
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  animation: cur-blink 0.9s step-end infinite;
+}
+@keyframes cur-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* pipeline step entrance animation */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pf-step { animation: fade-up 0.45s ease both; }
+.pipeline-flow .pf-step:nth-child(1) { animation-delay: 0.05s; }
+.pipeline-flow .pf-step:nth-child(3) { animation-delay: 0.18s; }
+.pipeline-flow .pf-step:nth-child(5) { animation-delay: 0.31s; }
+.pipeline-flow .pf-step:nth-child(7) { animation-delay: 0.44s; }
+.pipeline-flow .pf-arrow { animation: fade-up 0.45s ease both; }
+.pipeline-flow .pf-arrow:nth-child(2) { animation-delay: 0.11s; }
+.pipeline-flow .pf-arrow:nth-child(4) { animation-delay: 0.24s; }
+.pipeline-flow .pf-arrow:nth-child(6) { animation-delay: 0.37s; }
+
+/* gradient run button */
+.btn-run {
+  background: linear-gradient(135deg, #E8622A 0%, #F5A742 100%);
+  color: #fff;
+  padding: 0 1.25rem;
+  height: 36px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 7px;
+  box-shadow: 0 2px 8px rgba(232,98,42,0.28);
+  transition: box-shadow 0.2s, transform 0.15s, opacity 0.15s;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+}
+.btn-run:hover { box-shadow: 0 5px 18px rgba(232,98,42,0.40); transform: translateY(-1px); }
+.btn-run:active { transform: translateY(0); opacity: 0.88; }
+
+/* preset chip micro bounce */
+.preset-chip {
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s !important;
+}
+.preset-chip:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 3px 10px rgba(232,98,42,0.18) !important;
+}
+.preset-chip:active { transform: translateY(0) !important; }
+
+/* stat strip entrance */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.discover-stats { animation: fade-in 0.5s ease 0.1s both; }
+
+/* eval case cards */
+.ec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.ec-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 1.125rem 1.25rem;
+  transition: border-color 0.3s;
+}
+.ec-card.ec-running { border-color: var(--blue); }
+.ec-card.ec-pass    { border-color: var(--green); }
+.ec-card.ec-partial { border-color: var(--amber); }
+.ec-card.ec-fail    { border-color: var(--red); }
+
+.ec-head {
+  display: flex; align-items: flex-start; gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+.ec-num {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 0.625rem; font-weight: 700; color: var(--muted2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.ec-title { font-size: 0.8125rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+.ec-loc   { font-size: 0.6875rem; color: var(--muted2); margin-top: 0.15rem; }
+.ec-badge { margin-left: auto; flex-shrink: 0; font-size: 0.6875rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 20px; }
+
+.ec-fields { display: flex; flex-direction: column; gap: 0.45rem; }
+.ec-field  { display: flex; align-items: center; gap: 0.5rem; }
+.ec-flabel { font-size: 0.6875rem; color: var(--muted); width: 52px; flex-shrink: 0; }
+.ec-fval   {
+  background: var(--bg); border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.6875rem; color: var(--muted);
+  font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ec-fresult { font-size: 0.6875rem; font-weight: 700; flex-shrink: 0; min-width: 32px; text-align: right; }
+.ec-ok  { color: var(--green); }
+.ec-bad { color: var(--red); }
+.ec-dim { color: var(--muted2); }
+
+@keyframes spin-ec { to { transform: rotate(360deg); } }
+.ec-spinner {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--blue);
+  animation: spin-ec 0.65s linear infinite; display: inline-block;
+}
+
+/* overall score strip */
+.eval-score-strip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  animation: fade-up 0.4s ease both;
+}
+.ess-big {
+  font-size: 2.75rem; font-weight: 800;
+  letter-spacing: -0.05em; line-height: 1;
+}
+.ess-label { font-size: 0.6875rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+.ess-good { color: var(--green); }
+.ess-mid  { color: var(--amber); }
+.ess-bad  { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-mark">
+    <svg viewBox="0 0 18 18" fill="none">
+      <path d="M9 2L16 14.5H2L9 2Z" fill="white" fill-opacity="0.92"/>
+      <path d="M9 6L13.5 13.5H4.5L9 6Z" fill="white" fill-opacity="0.38"/>
+    </svg>
+  </div>
+  <h1><span class="brand-oris">ORIS</span><span class="brand-pipe">Quarry Pipeline</span></h1>
+  <div class="header-sep"></div>
+  <p>Materials discovery &amp; enrichment</p>
+  <div class="header-right">
+    <div class="dot" id="system-dot"></div>
+    <span style="font-size:0.75rem;color:var(--muted)" id="system-status-text">Connecting…</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <div class="tab active" onclick="switchTab('discover')">
+    <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+    Discover
+  </div>
+  <div class="tab" onclick="switchTab('sites')">
+    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+    Sites
+  </div>
+  <div class="tab" onclick="switchTab('map')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l4-2 6 3 4-2v10l-4 2-6-3-4 2V4z"/><path d="M5 2v10M11 5v10"/></svg>
+    Map
+  </div>
+  <div class="tab" onclick="switchTab('eval')">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 12L6 8l3 3 4-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    Evaluation
+  </div>
+  <div class="tab" onclick="switchTab('health')">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 8h3l2-4 2 8 2-4h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    Health
+  </div>
+</nav>
+
+<!-- DISCOVER TAB -->
+<div id="tab-discover" class="panel active">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-chips">
+      <span class="hero-chip hero-chip-blue">OSM</span>
+      <span class="hero-chip hero-chip-orange">Gemini Flash</span>
+      <span class="hero-chip hero-chip-purple">PostgreSQL</span>
+    </div>
+    <h2 class="hero-title">Discover quarries <span class="hero-accent">anywhere.</span></h2>
+    <p class="hero-sub" id="hero-sub"><span class="hero-cursor"></span></p>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="discover-stats">
+    <div class="ds-card">
+      <div class="ds-val" id="stat-sites">—</div>
+      <div class="ds-key">sites indexed</div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-val" id="stat-jobs">—</div>
+      <div class="ds-key">jobs completed</div>
+    </div>
+    <div class="ds-card">
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.4rem">
+        <span class="ds-tag ds-tag-osm">OpenStreetMap</span>
+        <span class="ds-tag ds-tag-llm">Gemini AI</span>
+      </div>
+      <div class="ds-key">discovery stack</div>
+    </div>
+  </div>
+
+  <!-- Pipeline flow -->
+  <div class="pipeline-flow">
+    <div class="pf-step" id="pf-1">
+      <div class="pf-icon pf-icon-blue">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.5 2C5.46 2 3 4.46 3 7.5c0 4.2 5.5 9 5.5 9s5.5-4.8 5.5-9C14 4.46 11.54 2 8.5 2z"/>
+          <circle cx="8.5" cy="7.5" r="2"/>
+        </svg>
+      </div>
+      <div class="pf-meta">
+        <div class="pf-name">Discover</div>
+        <div class="pf-src">OSM Overpass API</div>
+      </div>
+      <span class="pf-step-num">01</span>
+    </div>
+
+    <div class="pf-arrow">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7h8M8 4l3 3-3 3"/>
+      </svg>
+    </div>
+
+    <div class="pf-step" id="pf-2">
+      <div class="pf-icon pf-icon-green">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8.5" cy="8.5" r="6"/>
+          <path d="M2.5 8.5h12M8.5 2.5c-2 2-3 3.7-3 6s1 4 3 6M8.5 2.5c2 2 3 3.7 3 6s-1 4-3 6"/>
+        </svg>
+      </div>
+      <div class="pf-meta">
+        <div class="pf-name">Fetch</div>
+        <div class="pf-src">Web scraper</div>
+      </div>
+      <span class="pf-step-num">02</span>
+    </div>
+
+    <div class="pf-arrow">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7h8M8 4l3 3-3 3"/>
+      </svg>
+    </div>
+
+    <div class="pf-step" id="pf-3">
+      <div class="pf-icon pf-icon-orange">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.5 2l1.5 4.5H14l-3.5 2.5 1.3 4-3.3-2.3L5.2 13l1.3-4L3 6.5h4z"/>
+        </svg>
+      </div>
+      <div class="pf-meta">
+        <div class="pf-name">Extract</div>
+        <div class="pf-src">Gemini Flash</div>
+      </div>
+      <span class="pf-step-num">03</span>
+    </div>
+
+    <div class="pf-arrow">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7h8M8 4l3 3-3 3"/>
+      </svg>
+    </div>
+
+    <div class="pf-step" id="pf-4">
+      <div class="pf-icon pf-icon-purple">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="8.5" cy="5" rx="5.5" ry="2"/>
+          <path d="M3 5v4c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2V5"/>
+          <path d="M3 9v3c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2V9"/>
+        </svg>
+      </div>
+      <div class="pf-meta">
+        <div class="pf-name">Store</div>
+        <div class="pf-src">PostgreSQL</div>
+      </div>
+      <span class="pf-step-num">04</span>
+    </div>
+  </div>
+
+  <!-- Search form -->
+  <div class="card" style="padding:1.5rem;border-top:2px solid var(--accent)">
+    <div class="search-layout">
+
+      <!-- Left: inputs -->
+      <div>
+        <div class="card-title" style="margin-bottom:1rem">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="6.5" cy="6.5" r="4"/><path d="M10 10L13.5 13.5"/>
+          </svg>
+          Define search area
+        </div>
+
+        <!-- Location search -->
+        <div>
+          <label>Location</label>
+          <div class="loc-wrap">
+            <div class="loc-input-row">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.5C5.51 1.5 3.5 3.51 3.5 6c0 3.75 4.5 8.5 4.5 8.5s4.5-4.75 4.5-8.5C12.5 3.51 10.49 1.5 8 1.5z"/><circle cx="8" cy="6" r="1.5"/></svg>
+              <input type="text" id="loc-input" placeholder="Search city, region or place…" autocomplete="off" oninput="onLocInput()" onkeydown="onLocKey(event)">
+              <div class="loc-spinner" id="loc-spinner"></div>
+            </div>
+            <div class="loc-dropdown" id="loc-dropdown"></div>
+          </div>
+          <div class="loc-resolved" id="loc-resolved" style="display:none">
+            <svg viewBox="0 0 12 12" fill="currentColor"><path d="M10 3L5 8.5 2 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <span class="loc-coords-val" id="loc-coords-val"></span>
+          </div>
+        </div>
+
+        <!-- OR divider -->
+        <div class="or-divider">
+          <span>or</span>
+        </div>
+
+        <!-- Manual lat/lon + radius row -->
+        <div class="coords-row">
+          <div>
+            <label>Latitude</label>
+            <input type="number" id="lat" step="any" placeholder="48.8566" value="48.8566" oninput="onManualCoords()">
+          </div>
+          <div>
+            <label>Longitude</label>
+            <input type="number" id="lon" step="any" placeholder="2.3522" value="2.3522" oninput="onManualCoords()">
+          </div>
+          <div>
+            <label>Radius (km)</label>
+            <input type="number" id="radius" step="any" placeholder="50" value="50" min="0.1" oninput="updateAreaPreview()">
+          </div>
+        </div>
+
+        <!-- Quick presets -->
+        <div class="presets">
+          <span class="presets-label">Quick pick</span>
+          <button class="preset-chip" onclick="applyPreset(48.8566, 2.3522, 50, 'Paris Basin, France')">🗺 Paris Basin</button>
+          <button class="preset-chip" onclick="applyPreset(48.8788, -0.0975, 15, 'Normandy, France')">🏔 Normandy</button>
+          <button class="preset-chip" onclick="applyPreset(50.7196, 1.6050, 20, 'Boulonnais, France')">⛏ Boulonnais</button>
+          <button class="preset-chip" onclick="applyPreset(43.0466, 1.1022, 10, 'Ariège, France')">💎 Ariège</button>
+          <button class="preset-chip" onclick="applyPreset(45.7640, 4.8357, 30, 'Lyon, France')">🌊 Lyon</button>
+        </div>
+
+        <div class="form-footer">
+          <div class="field-sm">
+            <label>Max cost USD <span style="color:var(--muted2)">(optional)</span></label>
+            <input type="number" id="max_cost" step="0.01" placeholder="Unlimited">
+          </div>
+          <button class="btn-run" onclick="submitJob()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Run Pipeline
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: area preview SVG -->
+      <div class="area-preview">
+        <svg id="area-svg" width="220" height="220" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#F0EDE8">
+          <!-- Grid dots -->
+          <defs>
+            <pattern id="grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="0" cy="0" r="1" fill="#C5C0B8"/>
+              <circle cx="24" cy="0" r="1" fill="#C5C0B8"/>
+              <circle cx="0" cy="24" r="1" fill="#C5C0B8"/>
+              <circle cx="24" cy="24" r="1" fill="#C5C0B8"/>
+            </pattern>
+            <radialGradient id="areaGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#E8622A" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#E8622A" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="192" height="192" fill="url(#grid)"/>
+          <!-- Area circle -->
+          <circle id="area-circle" cx="96" cy="96" r="60" fill="url(#areaGrad)" stroke="#E8622A" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8"/>
+          <!-- Center crosshair -->
+          <line x1="96" y1="80" x2="96" y2="88" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="96" y1="104" x2="96" y2="112" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="80" y1="96" x2="88" y2="96" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="104" y1="96" x2="112" y2="96" stroke="#E8622A" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- Center dot with pulse ring -->
+          <circle cx="96" cy="96" r="3.5" fill="none" stroke="#E8622A" stroke-width="1.5">
+            <animate attributeName="r" values="4;22" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.7;0" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="96" cy="96" r="3.5" fill="#E8622A"/>
+        </svg>
+        <div class="area-lbl">
+          <strong id="area-radius-label">50</strong> km search radius
+        </div>
+        <div class="area-lbl" id="area-coord-label" style="margin-top:0.15rem;font-size:0.625rem;color:var(--muted2)">48.8566, 2.3522</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Active job status -->
+  <div class="job-status-card" id="job-status-card">
+    <div class="job-status-header">
+      <div class="job-id-wrap">
+        <span class="job-id" id="job-id-display"></span>
+        <span class="badge badge-pending" id="job-status-badge">pending</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <span style="font-size:0.75rem;color:var(--muted)" id="result-count"></span>
+        <span style="font-size:0.75rem;color:var(--muted2)" id="job-elapsed"></span>
+      </div>
+    </div>
+
+    <!-- Pipeline mini-steps -->
+    <div class="job-pipe">
+      <div class="jp-step" id="jp-1">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8.5 2C5.46 2 3 4.46 3 7.5c0 4.2 5.5 9 5.5 9s5.5-4.8 5.5-9C14 4.46 11.54 2 8.5 2z"/><circle cx="8.5" cy="7.5" r="2"/></svg>
+        Discover
+      </div>
+      <div class="jp-step" id="jp-2">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="6"/><path d="M2.5 8.5h12M8.5 2.5c-2 2-3 3.7-3 6s1 4 3 6M8.5 2.5c2 2 3 3.7 3 6s-1 4-3 6"/></svg>
+        Fetch
+      </div>
+      <div class="jp-step" id="jp-3">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8.5 2l1.5 4.5H14l-3.5 2.5 1.3 4-3.3-2.3L5.2 13l1.3-4L3 6.5h4z"/></svg>
+        Extract
+      </div>
+      <div class="jp-step" id="jp-4">
+        <svg viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><ellipse cx="8.5" cy="5" rx="5.5" ry="2"/><path d="M3 5v4c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2V5"/><path d="M3 9v3c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2V9"/></svg>
+        Store
+      </div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="progress-text">0%</span>
+      <span id="progress-eta"></span>
+    </div>
+  </div>
+
+  <!-- Recent jobs -->
+  <div class="section-label">Recent jobs</div>
+  <div class="card" style="padding:0">
+    <div id="jobs-list">
+      <div class="empty">
+        <div class="empty-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            <path d="M11 8v3l2 2" stroke-linecap="round"/>
+          </svg>
+          <p>No jobs yet</p>
+          <small>Pick a preset or enter coordinates above,<br>then click Run Pipeline</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SITES TAB -->
+<div id="tab-sites" class="panel">
+  <div class="card">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M10 10L13.5 13.5" stroke-linecap="round"/></svg>
+        <input type="text" id="search-q" placeholder="Search by name…" oninput="loadSites()">
+      </div>
+      <select id="search-status" onchange="loadSites()">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="unknown">Unknown</option>
+      </select>
+      <div class="divider"></div>
+      <button class="btn-ghost" onclick="loadSites()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 0v3l2-1.5L6 0Z" fill="currentColor"/></svg>
+        Refresh
+      </button>
+      <span id="sites-count" style="font-size:0.75rem;color:var(--muted);margin-left:auto"></span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Materials</th>
+          <th>Confidence</th>
+          <th>Coordinates</th>
+          <th>Discovered</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="sites-tbody">
+        <tr><td colspan="5">
+          <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <p>No sites yet</p>
+            <small>Run a discovery job from the Discover tab</small>
+          </div>
+        </td></tr>
+      </tbody>
+    </table>
+    <div class="pagination" id="sites-pagination"></div>
+  </div>
+</div>
+
+<!-- MAP TAB -->
+<div id="tab-map" class="panel" style="padding:0;max-width:none;position:relative">
+  <div id="map" style="height:calc(100vh - 110px);width:100%"></div>
+  <button onclick="loadMapMarkers()" style="position:absolute;top:12px;right:12px;z-index:1000;background:#fff;border:1px solid #DDD9D2;border-radius:7px;padding:6px 12px;font-size:12px;font-family:Inter,sans-serif;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)">
+    ↻ Refresh
+  </button>
+</div>
+
+<!-- EVAL TAB -->
+<div id="tab-eval" class="panel">
+  <div class="card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <div>
+      <div class="card-title" style="margin-bottom:0.375rem">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 12L6 8l3 3 4-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Ground truth evaluation
+      </div>
+      <p style="font-size:0.8125rem;color:var(--muted);line-height:1.6;max-width:520px;margin:0">
+        3 known French quarries. Pipeline submits jobs, waits for results, then scores name, status, and materials field by field.
+      </p>
+    </div>
+    <button class="btn-run" id="eval-btn" onclick="runEval()" style="flex-shrink:0;margin-top:0.125rem">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5L5.5 10 11 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Run Evaluation
+    </button>
+  </div>
+  <div id="eval-score-area"></div>
+  <div class="ec-grid" id="ec-grid"></div>
+</div>
+
+<!-- HEALTH TAB -->
+<div id="tab-health" class="panel">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:1rem">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 8h3l2-4 2 8 2-4h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      System health
+      <button class="btn-ghost" style="margin-left:auto;padding:0.25rem 0.625rem;font-size:0.75rem" onclick="loadHealth()">Refresh</button>
+    </div>
+    <div class="health-grid" id="health-grid">
+      <div style="grid-column:1/-1;padding:2rem;text-align:center;color:var(--muted);font-size:0.8125rem">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="logo-mark" style="width:24px;height:24px;border-radius:5px">
+          <svg viewBox="0 0 18 18" fill="none" style="width:12px"><path d="M9 2L16 14.5H2L9 2Z" fill="white" fill-opacity="0.9"/></svg>
+        </div>
+        <div>
+          <div class="modal-title" id="modal-title">Site record</div>
+          <div class="modal-subtitle" id="modal-subtitle"></div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="json-viewer" id="modal-json"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const API = '';
+let currentJobId = null;
+let pollTimer = null;
+let sitePage = 1;
+let jobStartTime = null;
+let elapsedTimer = null;
+const jobs = [];
+
+// Location state
+let selectedLat = 48.8566;
+let selectedLon = 2.3522;
+let locTimer = null;
+let locSuggestions = [];
+
+const GROUND_TRUTH = [
+  { label: "Carrière de Vignats (Normandy)", input: { latitude: 48.8788, longitude: -0.0975, radius_km: 10 }, expected: { official_name: "Vignats", operational_status: "active", materials_produced: ["limestone"] } },
+  { label: "Carrières du Boulonnais (Pas-de-Calais)", input: { latitude: 50.7196, longitude: 1.6050, radius_km: 15 }, expected: { official_name: "Boulonnais", operational_status: "active", materials_produced: ["limestone", "chalk"] } },
+  { label: "Carrière de Rimont (Ariège)", input: { latitude: 43.0466, longitude: 1.1022, radius_km: 5 }, expected: { official_name: "Rimont", operational_status: null, materials_produced: ["marble"] } }
+];
+
+// tab switching
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const tabs = ['discover','sites','map','eval','health'];
+  document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'sites') loadSites();
+  if (name === 'health') loadHealth();
+  if (name === 'eval') renderEvalCaseCards();
+  if (name === 'map') initMap();
+}
+
+// ── Map ──────────────────────────────────────────────────────────────────────
+let leafletMap = null;
+let mapMarkers = [];
+
+async function initMap() {
+  await new Promise(r => setTimeout(r, 30)); // wait for container to be visible
+  if (!leafletMap) {
+    leafletMap = L.map('map').setView([46, 2], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(leafletMap);
+  }
+  await loadMapMarkers();
+}
+
+async function loadMapMarkers() {
+  mapMarkers.forEach(m => leafletMap.removeLayer(m));
+  mapMarkers = [];
+
+  let page = 1, allSites = [];
+  while (true) {
+    const d = await (await fetch(`${API}/api/sites?page=${page}&page_size=100`)).json();
+    allSites.push(...d.items);
+    if (d.items.length < 100) break;
+    page++;
+  }
+
+  const statusColor = { active: '#15803D', inactive: '#DC2626', unknown: '#B45309' };
+
+  allSites.forEach(site => {
+    if (!site.latitude || !site.longitude) return;
+    const color = statusColor[site.operational_status] || '#6B6560';
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:10px;height:10px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+      iconSize: [14, 14], iconAnchor: [7, 7],
+    });
+    const m = L.marker([site.latitude, site.longitude], { icon })
+      .addTo(leafletMap)
+      .bindPopup(`
+        <div style="min-width:170px;font-family:Inter,sans-serif">
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">${site.official_name || '<em>Unnamed</em>'}</div>
+          <div style="font-size:11px;color:${color};font-weight:600;margin-bottom:2px">${site.operational_status || 'unknown'}
+            <span style="color:#6B6560;font-weight:400"> · ${Math.round((site.confidence||0)*100)}% conf</span>
+          </div>
+          <div style="font-size:11px;color:#6B6560;margin-bottom:8px">${site.latitude.toFixed(4)}, ${site.longitude.toFixed(4)}</div>
+          <button onclick="openSiteModal('${site.id}');leafletMap.closePopup()"
+            style="padding:3px 10px;background:#E8622A;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit">
+            View Record ↗
+          </button>
+        </div>`);
+    mapMarkers.push(m);
+  });
+
+  if (mapMarkers.length > 0) {
+    leafletMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.15));
+  }
+}
+
+// area preview SVG
+function updateAreaPreview() {
+  const r = parseFloat(document.getElementById('radius').value) || 50;
+  const svgR = Math.max(18, Math.min(84, 18 + (r / 200) * 66));
+  document.getElementById('area-circle').setAttribute('r', svgR);
+  document.getElementById('area-radius-label').textContent = r;
+  document.getElementById('area-coord-label').textContent = `${selectedLat.toFixed(4)}, ${selectedLon.toFixed(4)}`;
+}
+
+function applyPreset(lat, lon, radius, name) {
+  selectedLat = lat;
+  selectedLon = lon;
+  document.getElementById('radius').value = radius;
+  document.getElementById('loc-input').value = name;
+  document.getElementById('loc-coords-val').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  document.getElementById('loc-resolved').style.display = 'flex';
+  // Sync manual fields too
+  document.getElementById('lat').value = lat;
+  document.getElementById('lon').value = lon;
+  hideSuggestions();
+  updateAreaPreview();
+}
+
+// location geocoding via nominatim
+function onLocInput() {
+  const q = document.getElementById('loc-input').value.trim();
+  clearTimeout(locTimer);
+  document.getElementById('loc-resolved').style.display = 'none';
+  if (q.length < 2) { hideSuggestions(); return; }
+  document.getElementById('loc-spinner').style.display = 'block';
+  locTimer = setTimeout(() => fetchPlaces(q), 420);
+}
+
+function onLocKey(e) {
+  if (e.key === 'Escape') hideSuggestions();
+}
+
+async function fetchPlaces(q) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en', 'User-Agent': 'OrisQuarryPipeline/1.0' } }
+    );
+    const data = await res.json();
+    renderPlaces(data);
+  } catch(_) {
+    showDropdown('<div class="loc-empty">Search failed - check connection</div>');
+  } finally {
+    document.getElementById('loc-spinner').style.display = 'none';
+  }
+}
+
+function renderPlaces(places) {
+  locSuggestions = places;
+  if (!places.length) {
+    showDropdown('<div class="loc-empty">No results found</div>');
+    return;
+  }
+  const html = places.map((p, i) => {
+    const parts = p.display_name.split(',');
+    const name = parts.slice(0, 2).join(',').trim();
+    const detail = parts.slice(2).join(',').trim();
+    const lat = parseFloat(p.lat).toFixed(4);
+    const lon = parseFloat(p.lon).toFixed(4);
+    return `<div class="loc-suggestion" onclick="selectPlace(${i})">
+      <div class="loc-name">${name}</div>
+      <div class="loc-detail">${detail} &nbsp;·&nbsp; ${lat}, ${lon}</div>
+    </div>`;
+  }).join('');
+  showDropdown(html);
+}
+
+function showDropdown(html) {
+  const dd = document.getElementById('loc-dropdown');
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+}
+
+function hideSuggestions() {
+  const dd = document.getElementById('loc-dropdown');
+  dd.style.display = 'none';
+  dd.innerHTML = '';
+}
+
+function onManualCoords() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  if (!isNaN(lat) && !isNaN(lon)) {
+    selectedLat = lat;
+    selectedLon = lon;
+    // Clear the location search since user is entering manually
+    document.getElementById('loc-input').value = '';
+    document.getElementById('loc-resolved').style.display = 'none';
+    updateAreaPreview();
+  }
+}
+
+function selectPlace(index) {
+  const p = locSuggestions[index];
+  selectedLat = parseFloat(p.lat);
+  selectedLon = parseFloat(p.lon);
+  const parts = p.display_name.split(',');
+  document.getElementById('loc-input').value = parts.slice(0, 2).join(',').trim();
+  document.getElementById('loc-coords-val').textContent = `${selectedLat.toFixed(4)}, ${selectedLon.toFixed(4)}`;
+  document.getElementById('loc-resolved').style.display = 'flex';
+  document.getElementById('lat').value = selectedLat;
+  document.getElementById('lon').value = selectedLon;
+  hideSuggestions();
+  updateAreaPreview();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.loc-wrap')) hideSuggestions();
+});
+
+// count-up animation for stats
+function countUp(el, target, duration) {
+  duration = duration || 900;
+  if (!target || isNaN(target)) { el.textContent = target || '—'; return; }
+  const start = Date.now();
+  const tick = () => {
+    const t = Math.min((Date.now() - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(ease * target);
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// load the stats strip numbers from the API
+async function loadDiscoverStats() {
+  try {
+    const h = await (await fetch(`${API}/api/health`)).json();
+    const s = await (await fetch(`${API}/api/sites?page=1&page_size=1`)).json();
+    const jobs = h.total_jobs;
+    const sites = s.total;
+    const jobEl = document.getElementById('stat-jobs');
+    const siteEl = document.getElementById('stat-sites');
+    if (jobs != null) countUp(jobEl, jobs);
+    else jobEl.textContent = '—';
+    if (sites != null) countUp(siteEl, sites);
+    else siteEl.textContent = '—';
+  } catch(_) {}
+}
+
+// typewriter on hero subtitle
+const HERO_LINES = [
+  'Drop a pin, get structured quarry data.',
+  'OSM discovery + Gemini Flash extraction.',
+  'Name, materials, status. All source-grounded.',
+];
+let _twIdx = 0, _twChar = 0, _twForward = true, _twTimer = null;
+function typewriterTick() {
+  const el = document.getElementById('hero-sub');
+  if (!el) return;
+  const line = HERO_LINES[_twIdx];
+  if (_twForward) {
+    _twChar++;
+    el.innerHTML = line.slice(0, _twChar) + '<span class="hero-cursor"></span>';
+    if (_twChar >= line.length) {
+      _twForward = false;
+      _twTimer = setTimeout(typewriterTick, 2200);
+      return;
+    }
+    _twTimer = setTimeout(typewriterTick, 42);
+  } else {
+    _twChar = 0;
+    _twForward = true;
+    _twIdx = (_twIdx + 1) % HERO_LINES.length;
+    _twTimer = setTimeout(typewriterTick, 350);
+  }
+}
+typewriterTick();
+
+// highlight the current pipeline step based on progress %
+function setPipelineStep(pct, status) {
+  const steps = [1, 2, 3, 4];
+  // Main flow banner
+  steps.forEach(n => {
+    document.getElementById('pf-' + n).classList.remove('active','done');
+  });
+  // Mini steps
+  [1,2,3,4].forEach(n => {
+    const el = document.getElementById('jp-' + n);
+    el.classList.remove('jp-active','jp-done');
+  });
+
+  if (status === 'completed') {
+    steps.forEach(n => document.getElementById('pf-' + n).classList.add('done'));
+    [1,2,3,4].forEach(n => document.getElementById('jp-' + n).classList.add('jp-done'));
+    return;
+  }
+
+  let activeStep = 1;
+  if (pct >= 85) activeStep = 4;
+  else if (pct >= 20) activeStep = 3;
+  else if (pct >= 10) activeStep = 2;
+
+  for (let n = 1; n <= 4; n++) {
+    const pf = document.getElementById('pf-' + n);
+    const jp = document.getElementById('jp-' + n);
+    if (n < activeStep) { pf.classList.add('done'); jp.classList.add('jp-done'); }
+    else if (n === activeStep) { pf.classList.add('active'); jp.classList.add('jp-active'); }
+  }
+}
+
+// elapsed timer shown on the job card
+function startElapsed() {
+  jobStartTime = Date.now();
+  if (elapsedTimer) clearInterval(elapsedTimer);
+  elapsedTimer = setInterval(() => {
+    const secs = Math.floor((Date.now() - jobStartTime) / 1000);
+    const m = Math.floor(secs / 60), s = secs % 60;
+    document.getElementById('job-elapsed').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }, 1000);
+}
+function stopElapsed() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+}
+
+// job submission
+async function submitJob() {
+  // Prefer selectedLat/Lon (from search or preset), fall back to manual fields
+  const manLat = parseFloat(document.getElementById('lat').value);
+  const manLon = parseFloat(document.getElementById('lon').value);
+  const lat = selectedLat || manLat;
+  const lon = selectedLon || manLon;
+  const radius = parseFloat(document.getElementById('radius').value);
+  const maxCost = document.getElementById('max_cost').value;
+  if (isNaN(lat) || isNaN(lon) || isNaN(radius)) { alert('Please enter a location or coordinates.'); return; }
+  const body = { latitude: lat, longitude: lon, radius_km: radius };
+  if (maxCost) body.max_usd_cost = parseFloat(maxCost);
+  try {
+    const r = await fetch(`${API}/api/jobs`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    currentJobId = data.job_id;
+    jobs.unshift({ id: currentJobId, lat, lon, radius, status: 'running' });
+    showJobCard(currentJobId);
+    startPolling(currentJobId);
+    startElapsed();
+    renderJobsList();
+  } catch (e) { alert('Submission failed: ' + e.message); }
+}
+
+function showJobCard(jobId) {
+  const card = document.getElementById('job-status-card');
+  card.style.display = 'block';
+  document.getElementById('job-id-display').textContent = jobId.slice(0, 18) + '…';
+  document.getElementById('job-elapsed').textContent = '0s';
+  setProgress(0, 'pending');
+}
+
+function startPolling(jobId) {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(() => pollJob(jobId), 2000);
+}
+
+async function pollJob(jobId) {
+  try {
+    const r = await fetch(`${API}/api/jobs/${jobId}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    setProgress(d.progress, d.status, d.result_count);
+    setPipelineStep(d.progress, d.status);
+    const j = jobs.find(x => x.id === jobId);
+    if (j) j.status = d.status;
+    renderJobsList();
+    if (d.status === 'completed' || d.status === 'failed') {
+      clearInterval(pollTimer); pollTimer = null;
+      stopElapsed();
+      loadDiscoverStats();
+      if (d.status === 'completed') setTimeout(() => switchTab('sites'), 900);
+    }
+  } catch (_) {}
+}
+
+function setProgress(pct, status, count) {
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = pct + '%';
+  const badge = document.getElementById('job-status-badge');
+  badge.textContent = status;
+  badge.className = 'badge badge-' + status;
+  document.getElementById('result-count').textContent = count > 0 ? `${count} site${count !== 1 ? 's' : ''} found` : '';
+}
+
+function renderJobsList() {
+  const el = document.getElementById('jobs-list');
+  if (!jobs.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v3l2 2" stroke-linecap="round"/></svg>
+      <p>No jobs yet</p><small>Pick a preset or enter coordinates above,<br>then click Run Pipeline</small>
+    </div></div>`;
+    return;
+  }
+  el.innerHTML = jobs.slice(0, 8).map(j => `
+    <div class="job-row">
+      <div class="job-row-icon">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4"/><path d="M10 10L13.5 13.5"/></svg>
+      </div>
+      <div class="job-row-body">
+        <div class="job-row-id">${j.id.slice(0,20)}…</div>
+        <div class="job-row-meta">${j.lat.toFixed(4)}, ${j.lon.toFixed(4)} · ${j.radius} km radius</div>
+      </div>
+      <div class="job-row-right">
+        <span class="badge badge-${j.status || 'pending'}">${j.status || 'pending'}</span>
+        <button class="btn-icon" onclick="switchTab('sites')">Sites →</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// sites tab
+let sitesTotal = 0;
+async function loadSites() {
+  const q = document.getElementById('search-q').value;
+  const status = document.getElementById('search-status').value;
+  const params = new URLSearchParams({ page: sitePage, page_size: 20 });
+  if (q) params.set('q', q);
+  if (status) params.set('status', status);
+  try {
+    const r = await fetch(`${API}/api/sites?${params}`);
+    const data = await r.json();
+    sitesTotal = data.total;
+    document.getElementById('sites-count').textContent = data.total + ' site' + (data.total !== 1 ? 's' : '');
+    renderSites(data.items);
+    renderPagination(data.total, data.page, data.page_size);
+  } catch (e) { console.error(e); }
+}
+
+function confCls(c) { return c >= 0.7 ? 'conf-hi' : c >= 0.4 ? 'conf-mid' : 'conf-lo'; }
+
+function renderSites(items) {
+  const tbody = document.getElementById('sites-tbody');
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><p>No sites found</p><small>Try a different search or run a discovery job</small></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = items.map(s => {
+    const c = s.confidence || 0;
+    const pct = Math.round(c * 100);
+    const status = s.operational_status || 'unknown';
+    const name = s.official_name || '<span style="color:var(--muted2);font-style:italic">Unnamed</span>';
+    const mats = (s.materials || []).length
+      ? s.materials.map(m => `<span style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:0.6875rem;margin-right:3px">${m}</span>`).join('')
+      : '<span style="color:var(--muted2)">—</span>';
+    const discovered = s.created_at
+      ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+      : '—';
+    return `
+    <tr onclick="openSiteModal('${s.id}')">
+      <td class="td-name">${name}</td>
+      <td><span class="badge badge-${status}">${status}</span></td>
+      <td>${mats}</td>
+      <td>
+        <div class="conf-wrap">
+          <span class="conf-num">${pct}%</span>
+          <div class="conf-track"><div class="conf-bar ${confCls(c)}" style="width:${pct}%"></div></div>
+        </div>
+      </td>
+      <td class="td-muted">${s.latitude ? s.latitude.toFixed(4) + ', ' + s.longitude.toFixed(4) : '—'}</td>
+      <td class="td-muted">${discovered}</td>
+      <td><button class="btn-icon" onclick="event.stopPropagation();openSiteModal('${s.id}')">JSON ↗</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPagination(total, page, size) {
+  const pages = Math.ceil(total / size);
+  const el = document.getElementById('sites-pagination');
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = Array.from({length: pages}, (_, i) =>
+    `<button class="page-btn ${i+1===page?'active':''}" onclick="sitePage=${i+1};loadSites()">${i+1}</button>`
+  ).join('');
+}
+
+async function openSiteModal(id) {
+  try {
+    const r = await fetch(`${API}/api/sites/${id}`);
+    const data = await r.json();
+    document.getElementById('modal-title').textContent = data.extraction?.official_name?.value || 'Unnamed site';
+    document.getElementById('modal-subtitle').textContent = `site_id: ${data.site_id}`;
+    document.getElementById('modal-json').innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+    document.getElementById('modal').classList.add('open');
+  } catch (e) { alert('Could not load: ' + e.message); }
+}
+
+function syntaxHighlight(json) {
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+\.?\d*(?:[eE][+\-]?\d+)?)/g, match => {
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) return `<span class="j-key">${match}</span>`;
+      return `<span class="j-str">${match}</span>`;
+    }
+    if (/true|false/.test(match)) return `<span class="j-bool">${match}</span>`;
+    if (/null/.test(match)) return `<span class="j-null">${match}</span>`;
+    return `<span class="j-num">${match}</span>`;
+  });
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modal')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modal').classList.remove('open'); }
+
+// state for the eval cards - each entry maps to a GROUND_TRUTH case
+const _evalState = GROUND_TRUTH.map((gt, i) => ({
+  idx: i,
+  label: gt.label,
+  location: `${gt.input.latitude.toFixed(4)}, ${gt.input.longitude.toFixed(4)}`,
+  radius: gt.input.radius_km,
+  expected: gt.expected,
+  state: 'waiting',   // waiting | running | done | error
+  result: null,       // { nameMatch, statusMatch, matsMatch, score, foundName, foundStatus, foundMats }
+  error: null,
+}));
+
+function renderEvalCaseCards() {
+  const grid = document.getElementById('ec-grid');
+  if (!grid) return;
+  grid.innerHTML = _evalState.map(s => {
+    const stateClass = s.state === 'running' ? 'ec-running'
+      : s.state === 'error' ? 'ec-fail'
+      : s.state === 'done' ? (s.result.score >= 0.67 ? 'ec-pass' : s.result.score >= 0.34 ? 'ec-partial' : 'ec-fail')
+      : '';
+    const badge = s.state === 'waiting'
+      ? `<span class="ec-badge" style="background:var(--surface2);color:var(--muted)">Waiting</span>`
+      : s.state === 'running'
+      ? `<span class="ec-badge" style="background:rgba(59,130,246,0.12);color:var(--blue);display:flex;align-items:center;gap:5px"><span class="ec-spinner"></span>Running</span>`
+      : s.state === 'error'
+      ? `<span class="ec-badge" style="background:rgba(239,68,68,0.12);color:var(--red)">Error</span>`
+      : (() => {
+          const pct = Math.round(s.result.score * 100);
+          const col = pct >= 67 ? 'var(--green)' : pct >= 34 ? 'var(--amber)' : 'var(--red)';
+          return `<span class="ec-badge" style="background:rgba(0,0,0,0.06);color:${col};font-weight:700">${pct}%</span>`;
+        })();
+    const fields = s.state === 'done' ? `
+      <div class="ec-fields">
+        <div class="ec-field">
+          <span class="ec-flabel">Name</span>
+          <span class="ec-fval">${s.result.foundName || '-'}</span>
+          <span class="ec-fresult ${s.result.nameMatch ? 'ec-ok' : 'ec-bad'}">${s.result.nameMatch ? 'match' : 'miss'}</span>
+        </div>
+        <div class="ec-field">
+          <span class="ec-flabel">Status</span>
+          <span class="ec-fval">${s.result.foundStatus || 'null'}</span>
+          <span class="ec-fresult ${s.result.statusMatch ? 'ec-ok' : 'ec-bad'}">${s.result.statusMatch ? 'match' : 'miss'}</span>
+        </div>
+        <div class="ec-field">
+          <span class="ec-flabel">Materials</span>
+          <span class="ec-fval">${s.result.foundMats || '-'}</span>
+          <span class="ec-fresult ${s.result.matsMatch ? 'ec-ok' : 'ec-bad'}">${s.result.matsMatch ? 'match' : 'miss'}</span>
+        </div>
+      </div>` : s.state === 'error' ? `
+      <div class="ec-fields"><div class="ec-field"><span class="ec-fval" style="color:var(--red)">${s.error}</span></div></div>`
+      : `<div class="ec-fields">
+        <div class="ec-field"><span class="ec-flabel">Name</span><span class="ec-fval ec-dim">${s.expected.official_name}</span></div>
+        <div class="ec-field"><span class="ec-flabel">Status</span><span class="ec-fval ec-dim">${s.expected.operational_status || 'any'}</span></div>
+        <div class="ec-field"><span class="ec-flabel">Materials</span><span class="ec-fval ec-dim">${s.expected.materials_produced.join(', ')}</span></div>
+      </div>`;
+    return `
+      <div class="ec-card ${stateClass}">
+        <div class="ec-head">
+          <div>
+            <div class="ec-num">#${s.idx + 1}</div>
+            <div class="ec-title">${s.label}</div>
+            <div class="ec-loc">${s.location} &nbsp;·&nbsp; ${s.radius} km</div>
+          </div>
+          ${badge}
+        </div>
+        ${fields}
+      </div>`;
+  }).join('');
+
+  // restore score banner if all cases are already scored
+  const scoreArea = document.getElementById('eval-score-area');
+  if (scoreArea) {
+    const done = _evalState.filter(s => s.state === 'done');
+    if (done.length > 0 && _evalState.every(s => s.state === 'done' || s.state === 'error')) {
+      const totalScore = done.reduce((acc, s) => acc + s.result.score, 0);
+      const overall = Math.round(totalScore / done.length * 100);
+      const col = overall >= 80 ? 'ess-good' : overall >= 50 ? 'ess-mid' : 'ess-bad';
+      scoreArea.innerHTML = `
+        <div class="eval-score-strip">
+          <div><div class="ess-big ${col}">${overall}%</div><div class="ess-label">overall precision</div></div>
+          <div style="text-align:right"><div class="ess-big" style="color:var(--text)">${done.length}</div><div class="ess-label">cases scored</div></div>
+        </div>`;
+    } else if (_evalState.every(s => s.state === 'waiting')) {
+      scoreArea.innerHTML = '';
+    }
+  }
+}
+
+async function runEval() {
+  const btn = document.getElementById('eval-btn');
+  const scoreArea = document.getElementById('eval-score-area');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+  scoreArea.innerHTML = '';
+
+  // reset state
+  _evalState.forEach(s => { s.state = 'waiting'; s.result = null; s.error = null; });
+  renderEvalCaseCards();
+
+  let totalScore = 0, scored = 0;
+
+  for (const s of _evalState) {
+    s.state = 'running';
+    renderEvalCaseCards();
+
+    let jobId;
+    try {
+      const r = await fetch(`${API}/api/jobs`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(GROUND_TRUTH[s.idx].input) });
+      jobId = (await r.json()).job_id;
+    } catch(e) {
+      s.state = 'error'; s.error = 'Submission failed: ' + e.message;
+      renderEvalCaseCards();
+      continue;
+    }
+
+    // poll until done (max 3 min)
+    let job = null;
+    for (let i = 0; i < 90; i++) {
+      await new Promise(res => setTimeout(res, 2000));
+      try {
+        job = await (await fetch(`${API}/api/jobs/${jobId}`)).json();
+        if (job.status === 'completed' || job.status === 'failed') break;
+      } catch(_) {}
+    }
+    if (!job || job.status !== 'completed') {
+      s.state = 'error'; s.error = 'Job timed out or failed.';
+      renderEvalCaseCards();
+      continue;
+    }
+
+    let jobSites = [], page = 1;
+    while (true) {
+      const sitesData = await (await fetch(`${API}/api/sites?page=${page}&page_size=50`)).json();
+      jobSites = jobSites.concat(sitesData.items.filter(site => site.job_id === jobId));
+      if (sitesData.items.length < 50) break;
+      page++;
+    }
+    if (!jobSites.length) {
+      s.state = 'error'; s.error = 'No sites extracted for this area.';
+      renderEvalCaseCards();
+      continue;
+    }
+
+    // pick best matching site across all returned for this job
+    let bestScore = -1, bestResult = null;
+    for (const site of jobSites) {
+      const full = await (await fetch(`${API}/api/sites/${site.id}`)).json();
+      const ex = full.extraction || {};
+      const nameVal = (ex.official_name?.value || '').toLowerCase();
+      const statusVal = ex.operational_status?.value || null;
+      const mats = (ex.materials_produced || []).map(m => (m.value || '').toLowerCase());
+      const gt = GROUND_TRUTH[s.idx];
+      const nm = gt.expected.official_name ? nameVal.includes(gt.expected.official_name.toLowerCase()) : true;
+      const sm = gt.expected.operational_status === null || statusVal === gt.expected.operational_status;
+      const mm = gt.expected.materials_produced.every(m => mats.some(e => e.includes(m)));
+      const fs = ([nm, sm, mm].filter(Boolean).length) / 3;
+      if (fs > bestScore) {
+        bestScore = fs;
+        bestResult = {
+          nameMatch: nm, statusMatch: sm, matsMatch: mm, score: fs,
+          foundName: ex.official_name?.value || '',
+          foundStatus: statusVal,
+          foundMats: mats.join(', '),
+        };
+      }
+    }
+
+    s.state = 'done'; s.result = bestResult;
+    totalScore += bestResult.score; scored++;
+    renderEvalCaseCards();
+  }
+
+  // overall score strip
+  const overall = scored > 0 ? Math.round(totalScore / scored * 100) : 0;
+  const col = overall >= 80 ? 'ess-good' : overall >= 50 ? 'ess-mid' : 'ess-bad';
+  scoreArea.innerHTML = `
+    <div class="eval-score-strip">
+      <div><div class="ess-big ${col}">${overall}%</div><div class="ess-label">overall precision</div></div>
+      <div style="text-align:right"><div class="ess-big" style="color:var(--text)">${scored}</div><div class="ess-label">cases scored</div></div>
+    </div>`;
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5L5.5 10 11 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Run Again';
+}
+
+// health tab
+async function loadHealth() {
+  try {
+    const d = await (await fetch(`${API}/api/health`)).json();
+    const ok = d.status === 'ok';
+    document.getElementById('system-dot').style.background = ok ? 'var(--green)' : 'var(--amber)';
+    document.getElementById('system-status-text').textContent = ok ? 'All systems operational' : 'Degraded';
+    document.getElementById('health-grid').innerHTML = [
+      { label: 'Status',     value: d.status,       cls: d.status==='ok'?'ht-ok':'ht-err',     sub: 'overall' },
+      { label: 'Database',   value: d.database,     cls: d.database==='ok'?'ht-ok':'ht-err',   sub: 'postgres' },
+      { label: 'Redis',      value: d.redis,        cls: d.redis==='ok'?'ht-ok':'ht-err',      sub: 'broker' },
+      { label: 'Workers',    value: d.worker_count >= 0 ? d.worker_count : '?', cls: d.worker_count > 0 ? 'ht-ok' : 'ht-warn', sub: 'celery workers' },
+      { label: 'Queue',      value: d.queue_depth,  cls: d.queue_depth > 5 ? 'ht-warn':'ht-neutral', sub: 'pending tasks' },
+      { label: 'Total jobs', value: d.total_jobs,   cls: 'ht-neutral', sub: 'all time' },
+      { label: 'Error rate', value: (d.error_rate*100).toFixed(1)+'%', cls: d.error_rate>0.1?'ht-err':'ht-ok', sub: 'last period' },
+    ].map(t => `
+      <div class="health-tile">
+        <div class="ht-label">${t.label}</div>
+        <div class="ht-value ${t.cls}">${t.value}</div>
+        <div class="ht-sub">${t.sub}</div>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('system-dot').style.background = 'var(--red)';
+    document.getElementById('system-status-text').textContent = 'Backend unreachable';
+    document.getElementById('health-grid').innerHTML = `<div style="grid-column:1/-1;padding:2rem;text-align:center;color:var(--red);font-size:0.8125rem">Cannot reach backend - is Docker running?</div>`;
+  }
+}
+
+// Init
+loadHealth();
+loadDiscoverStats();
+applyPreset(48.8566, 2.3522, 50, 'Paris Basin, France');
+renderEvalCaseCards();
+setInterval(loadHealth, 30000);
+</script>
+</body>
+</html>
