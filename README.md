@@ -82,31 +82,6 @@ flowchart TD
     API --> User
 ```
 
-```
-POST /api/jobs
-    |
-    v
-Celery worker picks it up
-    |
-    +-- Discovery
-    |       OSM Overpass API -> quarry nodes/ways with tags
-    |       Serper web search -> candidate URLs (optional, needs API key)
-    |
-    +-- Scraper (per candidate)
-    |       checks robots.txt first
-    |       fetches with jitter + handles Retry-After on 429s
-    |       strips HTML to plain text via BeautifulSoup
-    |
-    +-- Extractor (per source)
-    |       OSM tags -> free baseline extraction, no LLM
-    |       Gemini Flash -> structured extraction with verbatim evidence quotes
-    |
-    +-- Reconciler
-            picks best value per field (trust tier x confidence)
-            verifies location via Nominatim reverse geocode
-            saves final QuarrySiteRecord to Postgres
-```
-
 Stack is FastAPI + Celery + Redis + Postgres + Nginx, all in Docker Compose.
 
 ### Why these choices
