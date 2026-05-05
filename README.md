@@ -106,7 +106,7 @@ A few endpoints worth knowing:
 
 - `POST /api/jobs` — kick off a new search. Body: `{ latitude, longitude, radius_km }`. Returns a `job_id` you can poll.
 - `GET /api/jobs/:id` — check where a job is at (pending / running / completed / failed), progress 0–100, and how many sites came back.
-- `GET /api/sites` — browse everything in the DB. Supports `?q=` to filter by name and `?status=` for operational status. Paginated.
+- `GET /api/sites` — browse everything in the DB. Supports `?q=` to filter by name, `?status=` for operational status, and `?named_only=true` to exclude unnamed sites. Paginated.
 - `GET /api/sites/:id` — full site record with all source evidence, confidence scores, model call logs.
 - `GET /api/health` — quick sanity check: DB up, Redis up, queue depth, worker count, error rate.
 
